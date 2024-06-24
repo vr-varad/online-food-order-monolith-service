@@ -1,0 +1,1 @@
+export const mongo_url = "mongodb+srv://testUser:test12345@testusers.hsv54ix.mongodb.net/"
