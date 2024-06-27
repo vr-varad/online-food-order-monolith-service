@@ -1,21 +1,15 @@
-import { AdminRouter, VandorRouter } from "./routes";
-import mongoose from "mongoose";
-import path from 'path'
-import express from 'express';
-import { mongo_url } from "./config";
-
-const app = express();
-
-app.use(express.json())
-app.use(express.urlencoded({extended: true}));
-app.use('/images',express.static(path.join(__dirname,'images')))
-
-app.use("/admin",AdminRouter)
-app.use("/vandor",VandorRouter)
+import App from './services/ExpressService'
+import DB from './services/DatabaseService'
+import express from 'express'
 
 
-mongoose.connect(mongo_url).then(()=>console.log("DB Connected")).catch((e)=>console.log(e.message))
+const StartServer = async()=>{
+    const app = express()
+    await DB();
+    await App(app);
+    app.listen(8080,()=>{
+        console.log("Server Started At Port 8080")
+    })   
+}
 
-app.listen(8080,()=>{
-    console.log("Server Running At port 8080")
-})
+StartServer()
