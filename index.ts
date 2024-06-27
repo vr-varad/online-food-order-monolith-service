@@ -1,6 +1,6 @@
 import { AdminRouter, VandorRouter } from "./routes";
 import mongoose from "mongoose";
-
+import path from 'path'
 import express from 'express';
 import { mongo_url } from "./config";
 
@@ -8,9 +8,11 @@ const app = express();
 
 app.use(express.json())
 app.use(express.urlencoded({extended: true}));
+app.use('/images',express.static(path.join(__dirname,'images')))
 
 app.use("/admin",AdminRouter)
 app.use("/vandor",VandorRouter)
+
 
 mongoose.connect(mongo_url).then(()=>console.log("DB Connected")).catch((e)=>console.log(e.message))
 

@@ -1,11 +1,14 @@
 import express, { Request, Response, NextFunction } from "express";
+import { CreateVandor, GetVendors, GetVendorById } from "../controllers";
 
-const router  = express.Router();
+const router = express.Router();
 
-router.get('/',(req: Request, res: Response, next: NextFunction)=>{
-    res.send("Admin Routes")
-})
+router.post("/vandor", CreateVandor);
+router.get("/vandor", GetVendors);
+router.get("/vandor/:id", GetVendorById);
 
+router.get("/", (req: Request, res: Response, next: NextFunction) => {
+  res.send("Admin Routes");
+});
 
-
-export {router as AdminRouter}
+export { router as AdminRouter };
