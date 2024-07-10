@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
-import { mongo_url } from "../config";
-
+import mongoose, { mongo } from "mongoose";
+const mongo_url = "mongodb://localhost:27017"
 export default async () => {
   mongoose
     .connect(mongo_url)

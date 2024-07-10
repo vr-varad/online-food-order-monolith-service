@@ -1,6 +1,5 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { VandorPayload } from "../dto";
 import { jwt_secret } from "../config";
 import { AuthPayload } from "../dto/Auth.dto";
 import { Request } from "express";
@@ -30,7 +29,7 @@ export const VerifyPassword = async (
   return (await GenPassword(salt, enteredPassword)) === savedPassword;
 };
 
-export const GenerateToken = (payload: VandorPayload) => {
+export const GenerateToken = (payload: AuthPayload) => {
   return jwt.sign(payload, jwt_secret, { expiresIn: "1d" });
 };
 

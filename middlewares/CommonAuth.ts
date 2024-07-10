@@ -11,7 +11,6 @@ declare global {
 }
 
 export const AuthMiddleware = async (req: Request, res: Response, next: NextFunction)=>{
-    console.log(1)
     const signature = await ValidateToken(req);
     if(signature){
         return next()
