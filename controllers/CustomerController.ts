@@ -3,6 +3,7 @@ import express, { Request, Response, NextFunction } from "express";
 import {
   CreateCustomerInputs,
   LoginCustomerInputs,
+  OrderInputs,
   UpdateCustomerInputs,
 } from "../dto/Customer.dto";
 import { validate, ValidationError } from "class-validator";
@@ -14,6 +15,8 @@ import {
 } from "../utility";
 import { Customer } from "../models/Customer";
 import { GenOtp, SendOtp } from "../utility/NotificationUtility";
+import { Food } from "../models/Food";
+import { Order } from "../models/Order";
 
 // ---------------------------------------------------------------- SignUP ----------------------------------------------------------------------------------
 
@@ -61,6 +64,7 @@ export const CustomerSignUp = async (
     lat: 0,
     lng: 0,
     verified: false,
+    orders : []
   });
 
   if (customer) {
@@ -254,3 +258,85 @@ export const UpdateCustomerProfile = async (
     message: "Error in Customer Profile Updation",
   });
 };
+
+// ---------------------------------------------------------------- Create Order ----------------------------------------------------------------------------------
+
+
+export const CreateOrder = async (req:Request, res:Response, next: NextFunction)=>{
+  const user = req.user
+  if(user){
+    const orderId = Math.trunc(Math.random()*8999999);
+    const customer = await Customer.findOne({
+      email : user.email
+    })
+    const cart = <[OrderInputs]>req.body;
+    
+    const cartItems = Array();
+    
+    let netAmount = 0.0;
+    
+    
+    const foods = await Food.find().where('_id').in(cart.map(item => item._id)).exec();
+    
+    foods.map(food=>{
+      cart.map(({_id, units})=>{
+        if(food._id == _id){
+          netAmount += food.price * units
+          cartItems.push({food, unit : units})
+        }
+      })
+    })
+    
+    if(cartItems){
+      const currentOrder  = await Order.create({
+          orderId: orderId,
+          items: cartItems,
+          totalAmount: netAmount,
+          orderDate: new Date(),
+          paidThrough: 'COD',
+          paymentResponse: '',
+          orderStatus: 'waiting'
+        })
+      if(currentOrder){
+        customer?.orders.push(currentOrder);
+        const updatedCustomer = await customer?.save();
+        return res.status(200).json(updatedCustomer)
+      }
+    }
+  }
+  return res.json(400).json({
+    message : "Error in Creating order"
+  })
+}
+
+export const GetAllOrders = async (req:Request, res:Response, next: NextFunction)=>{
+  const user = req.user
+  if(user){
+    const customer = await Customer.findOne({
+      email : user.email
+    })
+    if(customer){
+      return res.status(200).json(customer.orders)
+    }
+  }
+  return res.status(400).json({
+    message : "Error with Getting All orders from your Profile."
+  })
+}
+
+export const GetOrderById = async (req:Request, res:Response, next: NextFunction)=>{
+  const user = req.user
+  if(user){
+    const customer = await Customer.findOne({
+      email : user.email
+    })
+    if(customer){
+      const orderId = req.params.id;
+      const order = await Order.findById(orderId).populate('items.food')
+      return res.status(200).json(order)
+    }
+  }
+  return res.status(400).json({
+    message : "Error with Getting Order."
+  })
+}

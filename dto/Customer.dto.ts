@@ -38,4 +38,7 @@ export class UpdateCustomerInputs {
     address!:string
 }
   
-  
+export class OrderInputs {
+  _id!: string
+  units!: number
+}
