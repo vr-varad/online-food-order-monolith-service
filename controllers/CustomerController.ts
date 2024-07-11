@@ -64,7 +64,7 @@ export const CustomerSignUp = async (
     lat: 0,
     lng: 0,
     verified: false,
-    orders : []
+    orders: [],
   });
 
   if (customer) {
@@ -233,8 +233,8 @@ export const UpdateCustomerProfile = async (
   if (user) {
     const updateInputs = plainToClass(UpdateCustomerInputs, req.body);
     const updateInputsError = await validate(updateInputs, {
-        validationError: { target: true },
-      });
+      validationError: { target: true },
+    });
     if (updateInputsError.length > 0) {
       return res.status(400).json(updateInputsError);
     }
@@ -259,84 +259,195 @@ export const UpdateCustomerProfile = async (
   });
 };
 
-// ---------------------------------------------------------------- Create Order ----------------------------------------------------------------------------------
+// ---------------------------------------------------------------- Add to Cart ----------------------------------------------------------------------------------
 
+export const AddtoCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user;
 
-export const CreateOrder = async (req:Request, res:Response, next: NextFunction)=>{
+  if (user) {
+    const customer = await Customer.findOne({
+      email: user.email,
+    }).populate("cart.food");
+
+    let cartItems = Array();
+
+    const { _id, units } = <OrderInputs>req.body;
+
+    const food = await Food.findById(_id);
+
+    if (food) {
+      if (customer) {
+        cartItems = customer.cart;
+
+        if (cartItems.length > 0) {
+          let foodAlreadyExisting = cartItems.filter(
+            (item) => item.food._id.toString() === _id
+          );
+          if (foodAlreadyExisting.length > 0) {
+            const index = cartItems.indexOf(foodAlreadyExisting[0]);
+            if (units > 0) {
+              cartItems[index] = { food, units };
+            } else {
+              cartItems.splice(index, 1);
+            }
+          } else {
+            cartItems.push({ food, units });
+          }
+        } else {
+          cartItems.push({ food, units });
+        }
+
+        customer.cart = cartItems as any;
+        const updatedCustomer = await customer.save();
+        return res.status(200).json(updatedCustomer);
+      }
+    }
+  }
+  return res.status(400).json({
+    message: "Error in Adding Food to Cart",
+  });
+};
+
+// ---------------------------------------------------------------- Get Cart ----------------------------------------------------------------------------------
+
+export const GetCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const user = req.user
   if(user){
-    const orderId = Math.trunc(Math.random()*8999999);
+    const customer = await Customer.findOne({email: user.email}).populate('cart.food');
+    if(customer){
+      const cartItems = customer.cart;
+      return res.status(200).json(cartItems);
+    }
+  }
+  return res.status(400).json({
+    message : "Error in Getting Cart."
+  })
+};
+
+// ---------------------------------------------------------------- Delete Cart ----------------------------------------------------------------------------------
+
+export const DeleteCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user;
+  if(user){
+    const customer = await Customer.findOne({email: user.email}).populate('cart.food');
+    if(customer){
+      customer.cart = [] as any;
+      const updatedCustomer = await customer.save();
+      return res.status(200).json(updatedCustomer);
+    }
+  }
+  return res.status(400).json({
+    message : "Error in Deleting Cart."
+  })
+};
+
+// ---------------------------------------------------------------- Create Order ----------------------------------------------------------------------------------
+
+export const CreateOrder = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user;
+  if (user) {
+    const orderId = Math.trunc(Math.random() * 8999999);
     const customer = await Customer.findOne({
-      email : user.email
-    })
+      email: user.email,
+    });
     const cart = <[OrderInputs]>req.body;
-    
+
     const cartItems = Array();
-    
+
     let netAmount = 0.0;
-    
-    
-    const foods = await Food.find().where('_id').in(cart.map(item => item._id)).exec();
-    
-    foods.map(food=>{
-      cart.map(({_id, units})=>{
-        if(food._id == _id){
-          netAmount += food.price * units
-          cartItems.push({food, unit : units})
+
+    const foods = await Food.find()
+      .where("_id")
+      .in(cart.map((item) => item._id))
+      .exec();
+
+    foods.map((food) => {
+      cart.map(({ _id, units }) => {
+        if (food._id == _id) {
+          netAmount += food.price * units;
+          cartItems.push({ food, unit: units });
         }
-      })
-    })
-    
-    if(cartItems){
-      const currentOrder  = await Order.create({
-          orderId: orderId,
-          items: cartItems,
-          totalAmount: netAmount,
-          orderDate: new Date(),
-          paidThrough: 'COD',
-          paymentResponse: '',
-          orderStatus: 'waiting'
-        })
-      if(currentOrder){
+      });
+    });
+
+    if (cartItems) {
+      const currentOrder = await Order.create({
+        orderId: orderId,
+        items: cartItems,
+        totalAmount: netAmount,
+        orderDate: new Date(),
+        paidThrough: "COD",
+        paymentResponse: "",
+        orderStatus: "waiting",
+      });
+      if (currentOrder) {
         customer?.orders.push(currentOrder);
         const updatedCustomer = await customer?.save();
-        return res.status(200).json(updatedCustomer)
+        return res.status(200).json(updatedCustomer);
       }
     }
   }
   return res.json(400).json({
-    message : "Error in Creating order"
-  })
-}
+    message: "Error in Creating order",
+  });
+};
 
-export const GetAllOrders = async (req:Request, res:Response, next: NextFunction)=>{
-  const user = req.user
-  if(user){
+// ---------------------------------------------------------------- Get All Order ----------------------------------------------------------------------------------
+
+export const GetAllOrders = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user;
+  if (user) {
     const customer = await Customer.findOne({
-      email : user.email
-    })
-    if(customer){
-      return res.status(200).json(customer.orders)
+      email: user.email,
+    });
+    if (customer) {
+      return res.status(200).json(customer.orders);
     }
   }
   return res.status(400).json({
-    message : "Error with Getting All orders from your Profile."
-  })
-}
+    message: "Error with Getting All orders from your Profile.",
+  });
+};
 
-export const GetOrderById = async (req:Request, res:Response, next: NextFunction)=>{
-  const user = req.user
-  if(user){
+// ---------------------------------------------------------------- Create Order By Id----------------------------------------------------------------------------------
+
+export const GetOrderById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user;
+  if (user) {
     const customer = await Customer.findOne({
-      email : user.email
-    })
-    if(customer){
+      email: user.email,
+    });
+    if (customer) {
       const orderId = req.params.id;
-      const order = await Order.findById(orderId).populate('items.food')
-      return res.status(200).json(order)
+      const order = await Order.findById(orderId).populate("items.food");
+      return res.status(200).json(order);
     }
   }
   return res.status(400).json({
-    message : "Error with Getting Order."
-  })
-}
+    message: "Error with Getting Order.",
+  });
+};
