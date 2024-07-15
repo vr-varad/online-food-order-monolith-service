@@ -1,19 +1,20 @@
 import { NextFunction, Request, Response } from "express";
-import { EditVandorInput, VandorLoginInputs } from "../dto";
-import { findVandor } from "./AdminController";
+import { EditVendorInput, VendorLoginInputs } from "../dto";
+import { findVendor } from "./AdminController";
 import { GenerateToken, VerifyPassword } from "../utility";
 import { CreateFoodInput } from "../dto/Food.dto";
 import { Food } from "../models/Food";
+import { Order } from "../models/Order";
 
-export const VandorLogin = async (
+export const VendorLogin = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   console.log(1);
-  const { email, password } = <VandorLoginInputs>req.body;
+  const { email, password } = <VendorLoginInputs>req.body;
 
-  const existingVendor = await findVandor("", email);
+  const existingVendor = await findVendor("", email);
   console.log(existingVendor);
 
   if (existingVendor !== null) {
@@ -44,7 +45,7 @@ export const VandorLogin = async (
   });
 };
 
-export const GetVandorProfile = async (
+export const GetVendorProfile = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -52,7 +53,7 @@ export const GetVandorProfile = async (
   const user = req.user;
 
   if (user) {
-    const existingUser = await findVandor(user._id);
+    const existingUser = await findVendor(user._id);
     return res.json(existingUser);
   }
 
@@ -61,17 +62,17 @@ export const GetVandorProfile = async (
   });
 };
 
-export const UpdateVandorProfile = async (
+export const UpdateVendorProfile = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const { name, address, phone, foodType } = <EditVandorInput>req.body;
+  const { name, address, phone, foodType } = <EditVendorInput>req.body;
 
   const user = req.user;
 
   if (user) {
-    const existingUser = await findVandor(user._id);
+    const existingUser = await findVendor(user._id);
     if (existingUser !== null) {
       existingUser.name = name;
       existingUser.address = address;
@@ -83,28 +84,27 @@ export const UpdateVandorProfile = async (
   }
 
   return res.json({
-    message: "Vandor Data Not Found.",
+    message: "Vendor Data Not Found.",
   });
 };
 
-export const UpdateVandorProfilePicture = async (
+export const UpdateVendorProfilePicture = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-
   const user = req.user;
 
   if (user) {
-    const vandor = await findVandor(user?._id);
+    const vendor = await findVendor(user?._id);
 
-    const files = req.files as [Express.Multer.File]
+    const files = req.files as [Express.Multer.File];
 
-    const images = files.map((file: Express.Multer.File) => file.filename)
+    const images = files.map((file: Express.Multer.File) => file.filename);
 
-    if (vandor !== null) {
-      vandor.coverImages.push(...images)
-      const result = await vandor.save();
+    if (vendor !== null) {
+      vendor.coverImages.push(...images);
+      const result = await vendor.save();
       return res.json(result);
     }
   }
@@ -114,7 +114,7 @@ export const UpdateVandorProfilePicture = async (
   });
 };
 
-export const UpdateVandorService = async (
+export const UpdateVendorService = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -122,7 +122,7 @@ export const UpdateVandorService = async (
   const user = req.user;
 
   if (user) {
-    const existingUser = await findVandor(user._id);
+    const existingUser = await findVendor(user._id);
     if (existingUser !== null) {
       existingUser.serviceAvailable = !existingUser.serviceAvailable;
       const savedResult = await existingUser.save();
@@ -131,7 +131,7 @@ export const UpdateVandorService = async (
   }
 
   return res.json({
-    message: "Vandor Data Not Found.",
+    message: "Vendor Data Not Found.",
   });
 };
 
@@ -146,13 +146,13 @@ export const AddFood = async (
     const { name, description, readyTime, category, foodType, price } = <
       CreateFoodInput
     >req.body;
-    const vandor = await findVandor(user?._id);
+    const vendor = await findVendor(user?._id);
 
-    const files = req.files as [Express.Multer.File]
+    const files = req.files as [Express.Multer.File];
 
-    const images = files.map((file: Express.Multer.File) => file.filename)
+    const images = files.map((file: Express.Multer.File) => file.filename);
 
-    if (vandor !== null) {
+    if (vendor !== null) {
       const createFood = await Food.create({
         name,
         description,
@@ -161,11 +161,11 @@ export const AddFood = async (
         foodType,
         price,
         rating: 0,
-        vandorId: vandor._id,
+        vendorId: vendor._id,
         image: images,
       });
-      vandor.food.push(createFood);
-      const result = await vandor.save();
+      vendor.food.push(createFood);
+      const result = await vendor.save();
       return res.json(result);
     }
   }
@@ -183,7 +183,7 @@ export const GetFood = async (
   const user = req.user;
 
   if (user) {
-    const food = await Food.find({ vandorId: user._id });
+    const food = await Food.find({ vendorId: user._id });
     if (food !== null) {
       return res.json(food);
     }
@@ -191,5 +191,69 @@ export const GetFood = async (
 
   return res.json({
     message: "Fppd Data Not Found.",
+  });
+};
+
+export const GetCurrentOrder = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user;
+
+  if (user) {
+    const orders = await Order.find({ vendorId: user._id }).populate(
+      "items.food"
+    );
+    if (orders != null) {
+      return res.status(200).json(orders);
+    }
+  }
+  return res.status(400).json({
+    message: "Order Data not available",
+  });
+};
+
+export const GetOrderDetails = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const orderId = req.params.id;
+
+  if (orderId) {
+    const order = await Order.findById(orderId).populate("items.food");
+    if (order != null) {
+      return res.status(200).json(order);
+    }
+  }
+  return res.status(400).json({
+    message: "Order Data not available",
+  });
+};
+
+export const ProcessOrder = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const orderId = req.params.id;
+
+  const { status, remarks, time } = req.body;
+
+  if (orderId) {
+    const order = await Order.findById(orderId).populate("items.food");
+    if (order) {
+      order.orderStatus = status as string;
+      order.remarks = remarks;
+      if (time) {
+        order.readyTime = time;
+      }
+      await order.save();
+      return res.status(200).json(order);
+    }
+  }
+  return res.status(400).json({
+    message: "Unable to Process Order",
   });
 };

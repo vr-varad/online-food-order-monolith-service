@@ -1,12 +1,15 @@
 import express, { Request, Response, NextFunction } from "express";
 import {
-  VandorLogin,
-  GetVandorProfile,
-  UpdateVandorProfile,
-  UpdateVandorService,
+  VendorLogin,
+  GetVendorProfile,
+  UpdateVendorProfile,
+  UpdateVendorProfilePicture,
+  UpdateVendorService,
   AddFood,
   GetFood,
-  UpdateVandorProfilePicture,
+  GetAllOrders,
+  ProcessOrder,
+  GetOrderDetails
 } from "../controllers";
 import { AuthMiddleware } from "../middlewares";
 import multer from "multer";
@@ -24,17 +27,24 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage }).array("images", 10);
 
-router.post("/login", VandorLogin);
+router.post("/login", VendorLogin);
 router.use(AuthMiddleware);
-router.get("/profile", GetVandorProfile);
-router.patch("/profile", UpdateVandorProfile);
-router.patch("/service", UpdateVandorService);
-router.patch("/coverImage", upload, UpdateVandorProfilePicture);
+router.get("/profile", GetVendorProfile);
+router.patch("/profile", UpdateVendorProfile);
+router.patch("/service", UpdateVendorService);
+router.patch("/coverImage", upload, UpdateVendorProfilePicture);
 router.post("/food", upload, AddFood);
 router.get("/food", GetFood);
 
+// orders
+
+router.get('/orders', GetAllOrders)
+router.get('/orders/:id/process',ProcessOrder)
+router.get('/orders/:id',GetOrderDetails)
+
+
 router.get("/", (req: Request, res: Response, next: NextFunction) => {
-  res.send("Vandor Routes");
+  res.send("Vendor Routes");
 });
 
-export { router as VandorRouter };
+export { router as VendorRouter };

@@ -1,9 +1,9 @@
 import express, { Request, Response, NextFunction } from "express";
-import { CreateVandor, GetVendors, GetVendorById } from "../controllers";
+import { CreateVendor, GetVendors, GetVendorById } from "../controllers";
 
 const router = express.Router();
 
-router.post("/vandor", CreateVandor);
+router.post("/vandor", CreateVendor);
 router.get("/vandor", GetVendors);
 router.get("/vandor/:id", GetVendorById);
 

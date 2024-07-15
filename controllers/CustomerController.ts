@@ -372,6 +372,8 @@ export const CreateOrder = async (
 
     let netAmount = 0.0;
 
+    let vendorId;
+
     const foods = await Food.find()
       .where("_id")
       .in(cart.map((item) => item._id))
@@ -380,26 +382,36 @@ export const CreateOrder = async (
     foods.map((food) => {
       cart.map(({ _id, units }) => {
         if (food._id == _id) {
+          vendorId = food.vandorId;
           netAmount += food.price * units;
           cartItems.push({ food, unit: units });
         }
       });
     });
+    if(customer){
 
-    if (cartItems) {
-      const currentOrder = await Order.create({
-        orderId: orderId,
-        items: cartItems,
-        totalAmount: netAmount,
-        orderDate: new Date(),
-        paidThrough: "COD",
-        paymentResponse: "",
-        orderStatus: "waiting",
-      });
-      if (currentOrder) {
-        customer?.orders.push(currentOrder);
-        const updatedCustomer = await customer?.save();
-        return res.status(200).json(updatedCustomer);
+      
+      if (cartItems) {
+        const currentOrder = await Order.create({
+          orderId: orderId,
+          items: cartItems,
+          totalAmount: netAmount,
+          orderDate: new Date(),
+          paidThrough: "COD",
+          paymentResponse: "",
+          orderStatus: "waiting",
+          vendorId,
+          remarks: '',
+          offerId: '',
+          appliedOffers: false,
+          readyTime: '',
+        });
+        if (currentOrder) {
+          customer.cart = [] as any;
+          customer.orders.push(currentOrder);
+          const updatedCustomer = await customer?.save();
+          return res.status(200).json(updatedCustomer);
+        }
       }
     }
   }
