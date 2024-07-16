@@ -9,7 +9,10 @@ import {
   GetFood,
   GetAllOrders,
   ProcessOrder,
-  GetOrderDetails
+  GetOrderDetails,
+  GetOffers,
+  AddOffer,
+  EditOffer
 } from "../controllers";
 import { AuthMiddleware } from "../middlewares";
 import multer from "multer";
@@ -35,6 +38,12 @@ router.patch("/service", UpdateVendorService);
 router.patch("/coverImage", upload, UpdateVendorProfilePicture);
 router.post("/food", upload, AddFood);
 router.get("/food", GetFood);
+
+// offers
+
+router.get('/offers',GetOffers);
+router.post('/offer',AddOffer);
+router.put('/offer/:id',EditOffer)
 
 // orders
 

@@ -1,10 +1,12 @@
 import { NextFunction, Request, Response } from "express";
-import { EditVendorInput, VendorLoginInputs } from "../dto";
+import { CreateOfferInput, EditVendorInput, VendorLoginInputs } from "../dto";
 import { findVendor } from "./AdminController";
 import { GenerateToken, VerifyPassword } from "../utility";
 import { CreateFoodInput } from "../dto/Food.dto";
 import { Food } from "../models/Food";
 import { Order } from "../models/Order";
+import { Vendor } from "../models/Vendor";
+import { Offer } from "../models/Offer";
 
 export const VendorLogin = async (
   req: Request,
@@ -255,5 +257,133 @@ export const ProcessOrder = async (
   }
   return res.status(400).json({
     message: "Unable to Process Order",
+  });
+};
+
+export const GetOffers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user;
+  if (user) {
+    const offers = await Offer.find().populate("vendors");
+    let currentOffers = [] as any;
+    if (offers) {
+      offers.map((item) => {
+        if (item.vendors) {
+          item.vendors.map((vendor) => {
+            if (vendor._id.toString() === user._id) {
+              currentOffers.push(item);
+            }
+          });
+        }
+        if (item.offerType === "GENERIC") {
+          currentOffers.push(item);
+        }
+      });
+    }
+    return res.status(200).json(currentOffers);
+  }
+  return res.status(400).json({
+    message: "Error in getting Offers",
+  });
+};
+
+export const AddOffer = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user;
+
+  if (user) {
+    const {
+      offerType,
+      title,
+      description,
+      minValue,
+      offerAmount,
+      startValidity,
+      endValidity,
+      pincode,
+      promocode,
+      bank,
+      bins,
+    } = <CreateOfferInput>req.body;
+    const vendor = await Vendor.findById(user._id);
+    if (vendor) {
+      const offer = await Offer.create({
+        offerType,
+        title,
+        description,
+        minValue,
+        offerAmount,
+        startValidity,
+        endValidity,
+        pincode,
+        promocode,
+        bank,
+        bins,
+        vendors: [vendor],
+      });
+      return res.status(200).json(offer);
+    }
+  }
+  return res.json(400).json({
+    message: "Error in Adding Offer",
+  });
+};
+
+export const EditOffer = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = req.user;
+  if (user) {
+    const offerId = req.params.id;
+    if (offerId) {
+      const {
+        offerType,
+        title,
+        description,
+        minValue,
+        offerAmount,
+        startValidity,
+        endValidity,
+        pincode,
+        promocode,
+        bank,
+        bins,
+        isActive,
+      } = <CreateOfferInput>req.body;
+      const currentOffer = await Offer.findById(offerId);
+      if (currentOffer) {
+        const vendor = await findVendor(user._id);
+
+        if (vendor) {
+          currentOffer.offerType = offerType;
+          currentOffer.title = title;
+          currentOffer.description = description;
+          currentOffer.minValue = minValue;
+          currentOffer.offerAmount = offerAmount;
+          currentOffer.startValidity = startValidity;
+          currentOffer.endValidity = endValidity;
+          currentOffer.pincode = pincode;
+          currentOffer.promocode = promocode;
+          currentOffer.bank = bank;
+          currentOffer.bins = bins;
+          currentOffer.isActive = isActive as boolean;
+
+          const result = await currentOffer.save();
+
+          return res.status(200).json(result);
+        }
+      }
+    }
+  }
+  return res.status(400).json({
+    message: "Error in Editing the Offer",
   });
 };

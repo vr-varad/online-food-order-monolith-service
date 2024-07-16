@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { CreateVendorInputs } from "../dto";
-import { Vandor } from "../models/Vandor";
+import { Vendor } from "../models/Vendor";
 import { GenPassword, GenSalt } from "../utility";
 
 export const findVendor = async (id: string | undefined, email?: string) => {
   if (email) {
-    return await Vandor.findOne({ email: email });
+    return await Vendor.findOne({ email: email });
   } else {
-    return await Vandor.findById(id);
+    return await Vendor.findById(id);
   }
 };
 
@@ -35,7 +35,7 @@ export const CreateVendor = async (
   }
   const salt = await GenSalt();
   const hashedPassword = await GenPassword(salt, password);
-  const newVendor = await Vandor.create({
+  const newVendor = await Vendor.create({
     name,
     ownerName,
     foodType,
@@ -58,7 +58,7 @@ export const GetVendors = async (
   res: Response,
   next: NextFunction
 ) => {
-  const vendors = await Vandor.find();
+  const vendors = await Vendor.find();
 
   if (vendors !== null) {
     return res.json(vendors);
