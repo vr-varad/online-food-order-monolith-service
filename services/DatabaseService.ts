@@ -1,8 +1,9 @@
 import mongoose, { mongo } from "mongoose";
-const mongo_url = "mongodb://localhost:27017"
+import dotenv from 'dotenv'
+dotenv.config();
 export default async () => {
   mongoose
-    .connect(mongo_url)
+    .connect(process.env.mongo_url as string)
     .then(() => console.log("DB Connected"))
     .catch((e) => console.log(e.message));
 };
