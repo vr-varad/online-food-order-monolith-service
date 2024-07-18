@@ -3,6 +3,7 @@ import { CreateVendorInputs } from "../dto";
 import { Vendor } from "../models/Vendor";
 import { GenPassword, GenSalt } from "../utility";
 import { Transaction } from "../models/Transaction";
+import { DeliveryUser } from "../models/DeliveryUser";
 
 export const findVendor = async (id: string | undefined, email?: string) => {
   if (email) {
@@ -118,3 +119,28 @@ export const GetTransactionById = async (
     message: "Error Fetching the transaction",
   });
 };
+
+export const VerifyDeliveryUser = async(req:Request, res:Response, next:NextFunction)=>{
+  const {_id, status} = req.body
+  if(_id){
+    const profile = await DeliveryUser.findById(_id);
+    if(profile){
+      profile.verified = status
+      const updatedProfile = await profile.save();
+      return res.status(200).json(updatedProfile)
+    }
+  }
+  return res.status(400).json({
+    message : "Error verifing the delivery user"
+  })
+}
+
+export const GetAllDeliveryUsers = async (req:Request, res:Response, next:NextFunction)=>{
+  const deliveryUsers = await DeliveryUser.find();
+  if(deliveryUsers){
+    return res.status(200).json(deliveryUsers)
+  }
+  return res.status(400).json({
+    message:"Error Getting Delivery User"
+  })
+}

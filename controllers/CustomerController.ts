@@ -20,6 +20,8 @@ import { Food } from "../models/Food";
 import { Order } from "../models/Order";
 import { Offer } from "../models/Offer";
 import { Transaction } from "../models/Transaction";
+import { Vendor } from "../models/Vendor";
+import { DeliveryUser } from "../models/DeliveryUser";
 
 // ---------------------------------------------------------------- SignUP ----------------------------------------------------------------------------------
 
@@ -372,6 +374,24 @@ const validateTransaction = async (txnId: string) => {
   return { status: false, currentTransaction };
 };
 
+const assignDeliveryUser = async(vendorId: string)=>{
+  const vendor = await Vendor.findById(vendorId);
+  if(vendor){
+    const areaCode = vendor.pincode;
+    const vendorLat = vendor.lat;
+    const vendorLan = vendor.lan;
+    const deliveryPerson = await DeliveryUser.findOne({
+      pincode: areaCode,
+      verified: true,
+      isAvailable: true
+    })
+    if(deliveryPerson){
+      return deliveryPerson._id
+    }
+    return false
+  }
+}
+
 export const CreateOrder = async (
   req: Request,
   res: Response,
@@ -405,7 +425,7 @@ export const CreateOrder = async (
     foods.map((food) => {
       items.map(({ _id, units }) => {
         if (food._id == _id) {
-          vendorId = food.vandorId;
+          vendorId = food.vendorId;
           netAmount += food.price * units;
           cartItems.push({ food, unit: units });
         }
@@ -432,6 +452,11 @@ export const CreateOrder = async (
           currentTransaction.status = "CONFIRMED"
           await currentTransaction?.save();
           const updatedCustomer = await customer?.save();
+          const deliveryId = await assignDeliveryUser(vendorId || "");
+          if(deliveryId){
+            currentOrder.deliveryId = deliveryId as string;
+          }
+          await currentOrder.save();
           return res.status(200).json(updatedCustomer);
         }
       }
