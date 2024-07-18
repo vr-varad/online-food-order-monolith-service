@@ -38,7 +38,12 @@ export class UpdateCustomerInputs {
     address!:string
 }
   
-export class OrderInputs {
+export class CartItem {
   _id!: string
   units!: number
+}
+export class OrderInputs {
+    txnId!: string
+    amount!: string
+    items!: [CartItem]
 }

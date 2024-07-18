@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { CreateVendorInputs } from "../dto";
 import { Vendor } from "../models/Vendor";
 import { GenPassword, GenSalt } from "../utility";
+import { Transaction } from "../models/Transaction";
 
 export const findVendor = async (id: string | undefined, email?: string) => {
   if (email) {
@@ -84,5 +85,36 @@ export const GetVendorById = async (
 
   return res.json({
     message: "No Vendor Found",
+  });
+};
+
+export const GetAllTransactions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const transactions = await Transaction.find();
+  if (transactions) {
+    return res.status(200).json(transactions);
+  }
+  return res.status(404).json({
+    message: "Error Fetching the transactions",
+  });
+};
+
+export const GetTransactionById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const txnId = req.params.id;
+  if (txnId) {
+    const transaction = await Transaction.findById(txnId);
+    if (transaction) {
+      return res.status(200).json(transaction);
+    }
+  }
+  return res.status(404).json({
+    message: "Error Fetching the transaction",
   });
 };
